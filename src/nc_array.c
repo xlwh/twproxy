@@ -19,40 +19,45 @@
 
 #include <nc_core.h>
 
-struct array *
-array_create(uint32_t n, size_t size)
+//创建一个数组
+struct array * array_create(uint32_t n, size_t size)
 {
     struct array *a;
 
+    //进行断言判断
     ASSERT(n != 0 && size != 0);
 
+    //给数组分配空间，调用自定义的内存分配函数来进行内存的分配
     a = nc_alloc(sizeof(*a));
     if (a == NULL) {
         return NULL;
     }
 
+    //给数组元素分配空间
     a->elem = nc_alloc(n * size);
     if (a->elem == NULL) {
         nc_free(a);
         return NULL;
     }
 
+    //初始化size等属性
     a->nelem = 0;
     a->size = size;
     a->nalloc = n;
 
+    //返回创建好的数组
     return a;
 }
 
-void
-array_destroy(struct array *a)
+//销毁一个数组，调用array_deinit和nc_free进行处理
+void array_destroy(struct array *a)
 {
     array_deinit(a);
     nc_free(a);
 }
 
-rstatus_t
-array_init(struct array *a, uint32_t n, size_t size)
+//数组初始化,可以指定申请空间的大小和size
+rstatus_t array_init(struct array *a, uint32_t n, size_t size)
 {
     ASSERT(n != 0 && size != 0);
 
@@ -68,8 +73,8 @@ array_init(struct array *a, uint32_t n, size_t size)
     return NC_OK;
 }
 
-void
-array_deinit(struct array *a)
+//清理数组里面的元素，调用nc_free
+void array_deinit(struct array *a)
 {
     ASSERT(a->nelem == 0);
 
@@ -78,12 +83,13 @@ array_deinit(struct array *a)
     }
 }
 
-uint32_t
-array_idx(struct array *a, void *elem)
+//根据emem定位数组坐标
+uint32_t array_idx(struct array *a, void *elem)
 {
     uint8_t *p, *q;
     uint32_t off, idx;
 
+    //断言失败是否会退出？
     ASSERT(elem >= a->elem);
 
     p = a->elem;
@@ -97,8 +103,8 @@ array_idx(struct array *a, void *elem)
     return idx;
 }
 
-void *
-array_push(struct array *a)
+//往数组里面写入一个新的东西
+void * array_push(struct array *a)
 {
     void *elem, *new;
     size_t size;
@@ -190,10 +196,12 @@ array_each(struct array *a, array_each_t func, void *data)
     ASSERT(array_n(a) != 0);
     ASSERT(func != NULL);
 
+    //变量数组
     for (i = 0, nelem = array_n(a); i < nelem; i++) {
         void *elem = array_get(a, i);
         rstatus_t status;
 
+        //对每个函数调用自定义的处理函数
         status = func(elem, data);
         if (status != NC_OK) {
             return status;

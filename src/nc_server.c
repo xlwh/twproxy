@@ -793,17 +793,21 @@ server_pool_disconnect(struct context *ctx)
     array_each(&ctx->pool, server_pool_each_disconnect, NULL);
 }
 
+//给server pool绑定context
 static rstatus_t
 server_pool_each_set_owner(void *elem, void *data)
 {
+    //类似于对类型进行强制转换？
     struct server_pool *sp = elem;
     struct context *ctx = data;
 
+    //主要是绑定一个server pool所对应的context
     sp->ctx = ctx;
 
     return NC_OK;
 }
 
+//计算pool中已经建立连接的后端服务数目？
 static rstatus_t
 server_pool_each_calc_connections(void *elem, void *data)
 {
@@ -845,9 +849,10 @@ server_pool_each_run(void *elem, void *data)
     return server_pool_run(elem);
 }
 
-rstatus_t
-server_pool_init(struct array *server_pool, struct array *conf_pool,
-                 struct context *ctx)
+//后端连接初始化
+//context启动的时候调用的
+//主要是对server pool进行各项的初始化操作
+rstatus_t server_pool_init(struct array *server_pool, struct array *conf_pool, struct context *ctx)
 {
     rstatus_t status;
     uint32_t npool;
@@ -856,6 +861,7 @@ server_pool_init(struct array *server_pool, struct array *conf_pool,
     ASSERT(npool != 0);
     ASSERT(array_n(server_pool) == 0);
 
+    //创建一个数组：server_pool
     status = array_init(server_pool, npool, sizeof(struct server_pool));
     if (status != NC_OK) {
         return status;
@@ -885,6 +891,7 @@ server_pool_init(struct array *server_pool, struct array *conf_pool,
     }
 
     /* update server pool continuum */
+    //对hash算法进行更新
     status = array_each(server_pool, server_pool_each_run, NULL);
     if (status != NC_OK) {
         server_pool_deinit(server_pool);

@@ -24,6 +24,7 @@
 
 static uint32_t ctx_id; /* context generation */
 
+//计算连接数
 static rstatus_t
 core_calc_connections(struct context *ctx)
 {
@@ -45,16 +46,18 @@ core_calc_connections(struct context *ctx)
     return NC_OK;
 }
 
-static struct context *
-core_ctx_create(struct instance *nci)
+//创建context
+static struct context * core_ctx_create(struct instance *nci)
 {
     rstatus_t status;
     struct context *ctx;
 
+    //给context申请空间
     ctx = nc_alloc(sizeof(*ctx));
     if (ctx == NULL) {
         return NULL;
     }
+    //每次创建，id++
     ctx->id = ++ctx_id;
     ctx->cf = NULL;
     ctx->stats = NULL;
@@ -67,6 +70,7 @@ core_ctx_create(struct instance *nci)
     ctx->max_nsconn = 0;
 
     /* parse and create configuration */
+    //解析配置文件，进行配置初始化
     ctx->cf = conf_create(nci->conf_filename);
     if (ctx->cf == NULL) {
         nc_free(ctx);
@@ -74,6 +78,8 @@ core_ctx_create(struct instance *nci)
     }
 
     /* initialize server pool from configuration */
+    //从配置里面把后端服务的连接池创建起来
+    //主要是依据配置中写的配置，对整个server pool进行初始化配置
     status = server_pool_init(&ctx->pool, &ctx->cf->pool, ctx);
     if (status != NC_OK) {
         conf_destroy(ctx->cf);
@@ -85,6 +91,7 @@ core_ctx_create(struct instance *nci)
      * Get rlimit and calculate max client connections after we have
      * calculated max server connections
      */
+    //计算最大的连接数？
     status = core_calc_connections(ctx);
     if (status != NC_OK) {
         server_pool_deinit(&ctx->pool);
@@ -94,8 +101,8 @@ core_ctx_create(struct instance *nci)
     }
 
     /* create stats per server pool */
-    ctx->stats = stats_create(nci->stats_port, nci->stats_addr, nci->stats_interval,
-                              nci->hostname, &ctx->pool);
+    //创建统计，给每个server pool
+    ctx->stats = stats_create(nci->stats_port, nci->stats_addr, nci->stats_interval, nci->hostname, &ctx->pool);
     if (ctx->stats == NULL) {
         server_pool_deinit(&ctx->pool);
         conf_destroy(ctx->cf);
@@ -104,6 +111,7 @@ core_ctx_create(struct instance *nci)
     }
 
     /* initialize event handling for client, proxy and server */
+    //创建event，处理proxy 和server等事件
     ctx->evb = event_base_create(EVENT_SIZE, &core_core);
     if (ctx->evb == NULL) {
         stats_destroy(ctx->stats);
@@ -114,6 +122,7 @@ core_ctx_create(struct instance *nci)
     }
 
     /* preconnect? servers in server pool */
+    //提前进行后端连接？
     status = server_pool_preconnect(ctx);
     if (status != NC_OK) {
         server_pool_disconnect(ctx);
@@ -126,6 +135,7 @@ core_ctx_create(struct instance *nci)
     }
 
     /* initialize proxy per server pool */
+    //初始化proxy
     status = proxy_init(ctx);
     if (status != NC_OK) {
         server_pool_disconnect(ctx);
@@ -137,6 +147,7 @@ core_ctx_create(struct instance *nci)
         return NULL;
     }
 
+    //记录一个debug日志
     log_debug(LOG_VVERB, "created ctx %p id %"PRIu32"", ctx, ctx->id);
 
     return ctx;
@@ -155,21 +166,25 @@ core_ctx_destroy(struct context *ctx)
     nc_free(ctx);
 }
 
-struct context *
-core_start(struct instance *nci)
+//服务核心启动方法
+struct context * core_start(struct instance *nci)
 {
     struct context *ctx;
 
+    //几个连接池的初始化
     mbuf_init(nci);
     msg_init();
     conn_init();
 
+    //创建context
+    //这个是一个核心方法
     ctx = core_ctx_create(nci);
     if (ctx != NULL) {
         nci->ctx = ctx;
         return ctx;
     }
 
+    //进行销毁操作？？？
     conn_deinit();
     msg_deinit();
     mbuf_deinit();

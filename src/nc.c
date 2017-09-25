@@ -532,13 +532,14 @@ static void nc_run(struct instance *nci)
     //proxy上下文，记录了很多很有用的东西
     struct context *ctx;
 
-    //核心启动
+    //核心启动，启动后返回context
     ctx = core_start(nci);
     if (ctx == NULL) {
         return;
     }
 
     /* run rabbit run */
+    //启动循环，进行事件处理
     for (;;) {
         status = core_loop(ctx);
         if (status != NC_OK) {
@@ -546,6 +547,7 @@ static void nc_run(struct instance *nci)
         }
     }
 
+    //核心停止方法
     core_stop(ctx);
 }
 

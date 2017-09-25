@@ -247,8 +247,8 @@ conf_pool_deinit(struct conf_pool *cp)
     log_debug(LOG_VVERB, "deinit conf pool %p", cp);
 }
 
-rstatus_t
-conf_pool_each_transform(void *elem, void *data)
+//对配置进行转化,转换成为server pool
+rstatus_t conf_pool_each_transform(void *elem, void *data)
 {
     rstatus_t status;
     struct conf_pool *cp = elem;

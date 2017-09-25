@@ -84,6 +84,7 @@ struct server {
     uint32_t           failure_count; /* # consecutive failures */
 };
 
+//后端server列表
 struct server_pool {
     uint32_t           idx;                  /* pool index */
     struct context     *ctx;                 /* owner context */

@@ -75,6 +75,7 @@ struct conf_server {
     unsigned        valid:1;    /* valid? */
 };
 
+//连接池的配置
 struct conf_pool {
     struct string      name;                  /* pool name (root node) */
     struct conf_listen listen;                /* listen: */
